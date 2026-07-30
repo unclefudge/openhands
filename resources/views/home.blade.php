@@ -92,6 +92,7 @@
     <title>Open Hands | Custom Laravel &amp; PHP Development</title>
 
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="canonical" href="https://openhands.com.au/">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
