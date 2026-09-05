@@ -45,29 +45,48 @@
             'copy' => 'APIs, scheduled processes and Zoho CRM automation that move information reliably, trigger follow-up and keep people focused on higher-value work.',
         ],
     ];
-    /*$outcomes = [
-        [
-            'label' => 'Booking systems',
-            'title' => 'Complex rules made simple for staff and customers.',
-            'copy' => 'Availability, recurring bookings, room conflicts, permissions and administration brought together in a clear, dependable workflow.',
-        ],
-        [
-            'label' => 'Business platforms',
-            'title' => 'The right information, where your team needs it.',
-            'copy' => 'Operational tools designed around real processes—not forcing a business to reshape itself around generic software.',
-        ],
-        [
-            'label' => 'Connected workflows',
-            'title' => 'Less double handling between your systems.',
-            'copy' => 'APIs, scheduled processes and CRM automation that move information reliably and keep people focused on higher-value work.',
-        ],
-    ];*/
 
     $steps = [
         ['number' => '01', 'title' => 'Understand', 'copy' => 'We start with the problem, the people using the system and what a useful outcome genuinely looks like.'],
         ['number' => '02', 'title' => 'Shape', 'copy' => 'I turn that understanding into a practical approach, with clear priorities and no unnecessary complexity.'],
         ['number' => '03', 'title' => 'Build', 'copy' => 'Development happens in sensible stages, with regular conversations and working progress you can see.'],
         ['number' => '04', 'title' => 'Stay', 'copy' => 'I remain available after launch for improvements, support and the next thing your business needs.'],
+    ];
+
+    $projects = [
+        [
+            'slug' => 'safeworksite',
+            'type' => 'Construction operations & compliance',
+            'title' => 'SafeWorksite',
+            'copy' => 'A long-running Laravel application bringing safety, compliance, inspections, contractor information, planning, reporting and operational workflows into one system.',
+            'note' => 'Designed in 2014 and continuously developed since.',
+            'image' => 'images/work/safeworksite-planner.jpg',
+            'image_alt' => 'SafeWorksite construction planning interface',
+            'tags' => ['Laravel', 'Livewire', 'Compliance', 'Automation'],
+            'route' => 'work.safeworksite',
+        ],
+        [
+            'slug' => 'c3-booking',
+            'type' => 'Venue booking & event operations',
+            'title' => 'C3 Booking',
+            'copy' => 'A custom platform covering venue bookings, recurring events, room scheduling, catering, labour planning, costing and operational reporting.',
+            'note' => 'Built closely with the people who use it every day.',
+            'image' => 'images/work/c3-event-pipeline.jpg',
+            'image_alt' => 'C3 Booking event workflow board',
+            'tags' => ['Laravel', 'Livewire', 'Scheduling', 'Reporting'],
+            'route' => 'work.c3-booking',
+        ],
+        [
+            'slug' => 'clientbill',
+            'type' => 'Billing & business administration',
+            'title' => 'ClientBill',
+            'copy' => 'A purpose-built Laravel application used by Open Hands to manage client work, time, invoicing, recurring services and business administration in one connected system.',
+            'note' => 'Built from real operational needs and continually refined through day-to-day use.',
+            'image' => 'images/work/clientbill-dashboard.jpg',
+            'image_alt' => 'ClientBill invoicing dashboard',
+            'tags' => ['Laravel 12', 'Livewire', 'Filament', 'Accounting'],
+            'route' => 'work.clientbill',
+        ],
     ];
 
     $enquiryTypes = [
@@ -120,7 +139,7 @@
 
                 <nav class="desktop-nav" aria-label="Main navigation">
                     <a href="#services">Services</a>
-                    <a href="#work">What I build</a>
+                    <a href="#selected-work">Work</a>
                     <a href="#approach">Approach</a>
                     <a href="#about">About</a>
                 </nav>
@@ -134,16 +153,9 @@
                     <span></span>
                 </button>
 
-                <nav
-                    class="mobile-nav"
-                    aria-label="Mobile navigation"
-                    x-cloak
-                    x-show="menuOpen"
-                    x-transition
-                    x-on:click.outside="menuOpen = false"
-                >
+                <nav class="mobile-nav" aria-label="Mobile navigation" x-cloak x-show="menuOpen" x-transition x-on:click.outside="menuOpen = false">
                     <a href="#services" x-on:click="menuOpen = false">Services</a>
-                    <a href="#work" x-on:click="menuOpen = false">What I build</a>
+                    <a href="#selected-work" x-on:click="menuOpen = false">Work</a>
                     <a href="#approach" x-on:click="menuOpen = false">Approach</a>
                     <a href="#about" x-on:click="menuOpen = false">About</a>
                     <button type="button" x-on:click="openEnquiry()">
@@ -254,10 +266,7 @@
                     </div>
                 </div>
                 <div class="engineering-art">
-                    <img
-                        src="{{ asset('images/engineering-wire.jpg') }}"
-                        alt="Engineering diagram connecting Laravel, PHP, Zoho and automation workflows"
-                    >
+                    <img src="{{ asset('images/engineering-wire.jpg') }}" alt="Engineering diagram connecting Laravel, PHP, Zoho and automation workflows">
                 </div>
             </section>
 
@@ -280,6 +289,38 @@
                                 <h3>{{ $outcome['title'] }}</h3>
                             </div>
                             <p>{{ $outcome['copy'] }}</p>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+
+            <section class="section selected-work-section" id="selected-work">
+                <div class="selected-work-heading">
+                    <div>
+                        <p class="section-number">Selected work</p>
+                        <h2>Business systems built for real work.</h2>
+                    </div>
+                    <p>A few examples of applications I’ve designed, built and continued to develop over time.</p>
+                </div>
+
+                <div class="project-grid">
+                    @foreach ($projects as $project)
+                        <article class="project-card project-card-{{ $project['slug'] }}">
+                            <a class="project-image" href="{{ route($project['route']) }}" aria-label="View the {{ $project['title'] }} case study">
+                                <img src="{{ asset($project['image']) }}" alt="{{ $project['image_alt'] }}">
+                            </a>
+                            <div class="project-content">
+                                <p class="project-type">{{ $project['type'] }}</p>
+                                <h3>{{ $project['title'] }}</h3>
+                                <p>{{ $project['copy'] }}</p>
+                                <p class="project-note">{{ $project['note'] }}</p>
+                                <div class="project-footer">
+                                    <div class="project-tags">
+                                        @foreach ($project['tags'] as $tag)<span>{{ $tag }}</span>@endforeach
+                                    </div>
+                                    <a href="{{ route($project['route']) }}">View case study <span aria-hidden="true">↗</span></a>
+                                </div>
+                            </div>
                         </article>
                     @endforeach
                 </div>
@@ -380,21 +421,8 @@
             </footer>
         </div>
 
-        <div
-            class="modal-backdrop"
-            role="presentation"
-            x-cloak
-            x-show="enquiryOpen"
-            x-transition.opacity
-            x-on:click.self="enquiryOpen = false"
-        >
-            <section
-                class="enquiry-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="enquiry-title"
-                x-trap.noscroll="enquiryOpen"
-            >
+        <div class="modal-backdrop" role="presentation" x-cloak x-show="enquiryOpen" x-transition.opacity x-on:click.self="enquiryOpen = false">
+            <section class="enquiry-modal" role="dialog" aria-modal="true" aria-labelledby="enquiry-title" x-trap.noscroll="enquiryOpen">
                 <div class="modal-head">
                     <div>
                         <p class="eyebrow">Start a conversation</p>
@@ -404,12 +432,7 @@
                             person to help. You won’t be added to a mailing list.
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        class="modal-close"
-                        x-on:click="enquiryOpen = false"
-                        aria-label="Close enquiry form"
-                    >×</button>
+                    <button type="button" class="modal-close" x-on:click="enquiryOpen = false" aria-label="Close enquiry form">×</button>
                 </div>
 
                 @if (session('enquiry_sent'))
@@ -433,60 +456,27 @@
 
                         <div class="honeypot" aria-hidden="true">
                             <label for="website">Website</label>
-                            <input
-                                id="website"
-                                name="website"
-                                type="text"
-                                tabindex="-1"
-                                autocomplete="off"
-                            >
+                            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
                         </div>
 
-                        <input
-                            type="hidden"
-                            name="form_started_at"
-                            value="{{ Crypt::encryptString((string) now()->timestamp) }}"
-                        >
+                        <input type="hidden" name="form_started_at" value="{{ Crypt::encryptString((string) now()->timestamp) }}">
 
                         <div class="form-grid">
                             <label>
                                 Your name <span>*</span>
-                                <input
-                                    x-ref="firstField"
-                                    name="name"
-                                    type="text"
-                                    value="{{ old('name') }}"
-                                    autocomplete="name"
-                                    required
-                                >
+                                <input x-ref="firstField" name="name" type="text" value="{{ old('name') }}" autocomplete="name" required>
                             </label>
                             <label>
                                 Email address <span>*</span>
-                                <input
-                                    name="email"
-                                    type="email"
-                                    value="{{ old('email') }}"
-                                    autocomplete="email"
-                                    required
-                                >
+                                <input name="email" type="email" value="{{ old('email') }}" autocomplete="email" required>
                             </label>
                             <label>
                                 Business or organisation
-                                <input
-                                    name="organisation"
-                                    type="text"
-                                    value="{{ old('organisation') }}"
-                                    autocomplete="organization"
-                                >
+                                <input name="organisation" type="text" value="{{ old('organisation') }}" autocomplete="organization">
                             </label>
                             <label>
                                 Phone <small>optional</small>
-                                <input
-                                    name="phone"
-                                    type="tel"
-                                    value="{{ old('phone') }}"
-                                    autocomplete="tel"
-                                >
+                                <input name="phone" type="tel" value="{{ old('phone') }}" autocomplete="tel">
                             </label>
                         </div>
 
@@ -495,13 +485,7 @@
                             <div class="choice-grid">
                                 @foreach ($enquiryTypes as $type)
                                     <label class="choice">
-                                        <input
-                                            type="radio"
-                                            name="service"
-                                            value="{{ $type }}"
-                                            @checked(old('service') === $type)
-                                            required
-                                        >
+                                        <input type="radio" name="service" value="{{ $type }}" @checked(old('service') === $type) required>
                                         <span>{{ $type }}</span>
                                     </label>
                                 @endforeach
@@ -535,13 +519,7 @@
 
                         <label class="message-field">
                             Tell me about the problem or idea <span>*</span>
-                            <textarea
-                                name="message"
-                                rows="6"
-                                minlength="30"
-                                required
-                                placeholder="What are you hoping to build, improve or make easier? A short, genuine overview is perfect."
-                            >{{ old('message') }}</textarea>
+                            <textarea name="message" rows="6" minlength="30" required placeholder="What are you hoping to build, improve or make easier? A short, genuine overview is perfect.">{{ old('message') }}</textarea>
                             <small>Minimum 30 characters</small>
                         </label>
 
@@ -553,11 +531,7 @@
                         </label>
 
                         @if (config('services.turnstile.site_key'))
-                            <div
-                                class="cf-turnstile turnstile"
-                                data-sitekey="{{ config('services.turnstile.site_key') }}"
-                                data-theme="light"
-                            ></div>
+                            <div class="cf-turnstile turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-theme="light"></div>
                         @endif
 
                         <div class="form-submit">
