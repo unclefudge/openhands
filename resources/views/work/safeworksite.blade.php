@@ -20,6 +20,8 @@ $caseStudy = [
         ['src' => 'images/work/safeworksite-scheduler.jpg', 'alt' => 'SafeWorksite scheduled operations dashboard', 'title' => 'Scheduled operations', 'caption' => 'Monitoring automated reports and operational processes.'],
         ['src' => 'images/work/safeworksite-compliance.jpg', 'alt' => 'SafeWorksite company compliance record', 'title' => 'Contractor compliance', 'caption' => 'Company details, required documents and status in one view.'],
         ['src' => 'images/work/safeworksite-swms.jpg', 'alt' => 'SafeWorksite SWMS document', 'title' => 'Safety documentation', 'caption' => 'Structured Safe Work Method Statements connected to site activity.'],
+        ['src' => 'images/work/safeworksite-toolbox.jpg', 'alt' => 'SafeWorksite Toolbox Talks', 'title' => 'Toolbox talks', 'caption' => 'Easy step through process to create Toolbox talks'],
+        ['src' => 'images/work/safeworksite-foc.jpg', 'alt' => 'SafeWorksite FOC reporting', 'title' => 'FOC reporting', 'caption' => 'Final inspections and completion checklists.'],
     ],
     'technical' => 'I designed, developed, deployed and continue to maintain SafeWorksite independently. The system combines a long-established Laravel and MySQL foundation with Livewire interfaces, background jobs, scheduled automation and document storage. Zoho integration brings client enquiries into the operational workflow and supports automation between both systems, while the HIA API connects additional industry information and processes.',
     'tags' => ['Laravel', 'PHP', 'Livewire', 'MySQL', 'Zoho CRM', 'HIA API', 'Queues', 'Automation'],
