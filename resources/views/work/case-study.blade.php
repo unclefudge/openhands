@@ -82,5 +82,8 @@
             <footer><img src="{{ asset('images/openhands-logo.png') }}" alt="Open Hands" class="brand-logo"><p>Custom web applications · Laravel · PHP · Zoho · Automation</p><span>© {{ now()->year }} Open Hands</span></footer>
         </div>
     </main>
+
+    <!-- Cloudflare Web Analytics -->
+    <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7fef8baa320b49d5814cd4acf1c5679c"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

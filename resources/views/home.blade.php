@@ -548,5 +548,10 @@
     @if (config('services.turnstile.site_key'))
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
+
+    <!-- Cloudflare Web Analytics -->
+    <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7fef8baa320b49d5814cd4acf1c5679c"}'></script><!-- End Cloudflare Web Analytics -->
+
+
 </body>
 </html>
