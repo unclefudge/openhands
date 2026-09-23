@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -32,6 +33,13 @@ class EnquiryController extends Controller
             'form_started_at',
             'cf-turnstile-response',
         ]);
+
+        // Obvious promotional submissions are shown the normal success response,
+        // but no email is sent. A genuine enquiry containing only its existing
+        // website URL will not reach the blocking score by itself.
+        if ($this->isObviousSpam($enquiry['message'])) {
+            return back()->with('enquiry_sent', $this->successMessage());
+        }
 
         Mail::to(
             config('mail.enquiry_to.address'),
@@ -90,11 +98,60 @@ class EnquiryController extends Controller
             ]);
         }
 
-        if (! $response->successful() || ! $response->json('success')) {
+        $expectedHostnames = array_filter([
+            parse_url(config('app.url'), PHP_URL_HOST),
+            'openhands.com.au',
+            'www.openhands.com.au',
+        ]);
+
+        if (
+            ! $response->successful()
+            || ! $response->json('success')
+            || ! in_array($response->json('hostname'), $expectedHostnames, true)
+            || $response->json('action') !== 'enquiry'
+        ) {
             throw ValidationException::withMessages([
                 'turnstile' => 'Please complete the spam check and try again.',
             ]);
         }
+    }
+
+    private function isObviousSpam(string $message): bool
+    {
+        $message = Str::lower($message);
+        $score = preg_match('/https?:\/\/|www\./i', $message) ? 1 : 0;
+
+        $promotionalPhrases = [
+            'instant winner',
+            'win a new',
+            'free, no card',
+            'free plan',
+            'guest post',
+            'backlinks',
+            'seo services',
+            'crypto investment',
+            'publishing 3x more',
+            'boost watch time',
+        ];
+
+        foreach ($promotionalPhrases as $phrase) {
+            if (Str::contains($message, $phrase)) {
+                $score += 2;
+            }
+        }
+
+        $suspiciousLinkHosts = [
+            'telegra.ph',
+            'bit.ly',
+            'tinyurl.com',
+            't.me/',
+        ];
+
+        if (Str::contains($message, $suspiciousLinkHosts)) {
+            $score += 2;
+        }
+
+        return $score >= 3;
     }
 
     private function successMessage(): string

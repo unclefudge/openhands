@@ -531,7 +531,7 @@
                         </label>
 
                         @if (config('services.turnstile.site_key'))
-                            <div class="cf-turnstile turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-theme="light"></div>
+                            <div class="cf-turnstile turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-action="enquiry" data-theme="light"></div>
                         @endif
 
                         <div class="form-submit">
