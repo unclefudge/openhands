@@ -19,10 +19,13 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('enquiries', function (Request $request): array {
             $email = Str::lower((string) $request->input('email', 'unknown'));
+            $ip = $request->hasHeader('CF-Ray')
+                ? (string) $request->header('CF-Connecting-IP', $request->ip())
+                : (string) $request->ip();
 
             return [
-                Limit::perMinute(3)->by($request->ip()),
-                Limit::perDay(10)->by($request->ip().'|'.$email),
+                Limit::perMinute(3)->by($ip),
+                Limit::perDay(10)->by($ip.'|'.$email),
             ];
         });
     }

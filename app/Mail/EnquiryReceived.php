@@ -16,15 +16,21 @@ class EnquiryReceived extends Mailable
     /**
      * @param  array<string, mixed>  $enquiry
      */
-    public function __construct(public array $enquiry)
-    {
+    public function __construct(
+        public array $enquiry,
+        public ?int $spamScore = null,
+        public ?string $spamStatus = null,
+        public ?int $enquiryId = null,
+    ) {
     }
 
     public function envelope(): Envelope
     {
+        $prefix = $this->spamStatus === 'suspicious' ? "[CHECK: {$this->spamScore}] " : '';
+
         return new Envelope(
             replyTo: [new Address($this->enquiry['email'], $this->enquiry['name']),],
-            subject: 'Website enquiry: '.$this->enquiry['service'],
+            subject: $prefix.'Website enquiry: '.$this->enquiry['service'],
         );
     }
 

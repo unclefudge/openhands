@@ -5,83 +5,87 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EnquiryRequest;
 use App\Mail\EnquiryConfirmation;
 use App\Mail\EnquiryReceived;
+use App\Models\Enquiry;
+use App\Services\EnquirySpamScorer;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class EnquiryController extends Controller
 {
-    public function __invoke(EnquiryRequest $request): RedirectResponse
+    public function __invoke(EnquiryRequest $request, EnquirySpamScorer $scorer): RedirectResponse
     {
-        // Honeypot fields are hidden from genuine visitors but often completed
-        // automatically by spambots. Return a normal-looking success response
-        // without sending anything so the bot learns nothing useful.
-        if ($request->filled('website')) {
-            return back()->with('enquiry_sent', $this->successMessage());
-        }
+        $honeypotCompleted = $request->filled('website');
+        $turnstilePassed = $honeypotCompleted ? null : $this->verifyTurnstileWhenConfigured($request);
+        $completionSeconds = $this->completionSeconds($request->string('form_started_at')->toString());
+        $ipCountry = $this->cloudflareCountry($request->header('CF-IPCountry'));
 
-        $this->ensureHumanCompletionTime($request->string('form_started_at')->toString());
-        $this->verifyTurnstileWhenConfigured($request);
-
-        $enquiry = $request->safe()->except([
+        $enquiryData = $request->safe()->except([
             'website',
             'form_started_at',
             'cf-turnstile-response',
+            'genuine',
         ]);
 
-        // Obvious promotional submissions are shown the normal success response,
-        // but no email is sent. A genuine enquiry containing only its existing
-        // website URL will not reach the blocking score by itself.
-        if ($this->isObviousSpam($enquiry['message'])) {
-            return back()->with('enquiry_sent', $this->successMessage());
+        $assessment = $scorer->assess([
+            ...$enquiryData,
+            'website' => $request->input('website'),
+            'completion_seconds' => $completionSeconds,
+            'ip_country' => $ipCountry,
+        ]);
+
+        $enquiry = Enquiry::create([
+            ...$enquiryData,
+            'spam_score' => $assessment['score'],
+            'original_spam_score' => $assessment['score'],
+            'spam_status' => $assessment['status'],
+            'score_reasons' => $assessment['reasons'],
+            'ip_hash' => $this->hashIp($this->clientIp($request)),
+            'ip_country' => $ipCountry,
+            'email_country' => $assessment['email_country'],
+            'link_countries' => $assessment['link_countries'],
+            'message_fingerprint' => $assessment['fingerprint'],
+            'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
+            'turnstile_passed' => $turnstilePassed,
+            'completion_seconds' => $completionSeconds,
+            'last_scored_at' => now(),
+        ]);
+
+        if (in_array($enquiry->spam_status, ['delivered', 'suspicious'], true)) {
+            $this->sendOwnerNotification($enquiry);
         }
 
-        Mail::to(
-            config('mail.enquiry_to.address'),
-            config('mail.enquiry_to.name'),
-        )->send(new EnquiryReceived($enquiry));
-
-        // The enquiry has already reached Open Hands, so a failure while
-        // sending the courtesy confirmation should not invite the visitor
-        // to submit the form again and create a duplicate enquiry.
-        try {
-            Mail::to($enquiry['email'], $enquiry['name'])
-                ->send(new EnquiryConfirmation($enquiry));
-        } catch (Throwable $exception) {
-            report($exception);
+        if ($enquiry->spam_status === 'delivered') {
+            $this->sendConfirmation($enquiry);
         }
 
+        // Every valid submission receives the same response so blocked senders
+        // cannot use the site to tune their spam around the scoring rules.
         return back()->with('enquiry_sent', $this->successMessage());
     }
 
-    private function ensureHumanCompletionTime(string $encryptedStartedAt): void
+    private function completionSeconds(string $encryptedStartedAt): ?int
     {
         try {
             $startedAt = (int) Crypt::decryptString($encryptedStartedAt);
+            $elapsed = time() - $startedAt;
+
+            return $elapsed >= 0 ? $elapsed : null;
         } catch (Throwable) {
-            $startedAt = 0;
-        }
-
-        $elapsed = time() - $startedAt;
-
-        if ($elapsed < 3 || $elapsed > 43_200) {
-            throw ValidationException::withMessages([
-                'message' => 'Please take a moment to check your enquiry and try again.',
-            ]);
+            return null;
         }
     }
 
-    private function verifyTurnstileWhenConfigured(EnquiryRequest $request): void
+    private function verifyTurnstileWhenConfigured(EnquiryRequest $request): ?bool
     {
         $secret = config('services.turnstile.secret_key');
 
         if (blank($secret)) {
-            return;
+            return null;
         }
 
         try {
@@ -99,7 +103,7 @@ class EnquiryController extends Controller
         }
 
         $expectedHostnames = array_filter([
-            parse_url(config('app.url'), PHP_URL_HOST),
+            parse_url((string) config('app.url'), PHP_URL_HOST),
             'openhands.com.au',
             'www.openhands.com.au',
         ]);
@@ -114,44 +118,62 @@ class EnquiryController extends Controller
                 'turnstile' => 'Please complete the spam check and try again.',
             ]);
         }
+
+        return true;
     }
 
-    private function isObviousSpam(string $message): bool
+    private function cloudflareCountry(?string $country): ?string
     {
-        $message = Str::lower($message);
-        $score = preg_match('/https?:\/\/|www\./i', $message) ? 1 : 0;
+        $country = strtoupper(trim((string) $country));
 
-        $promotionalPhrases = [
-            'instant winner',
-            'win a new',
-            'free, no card',
-            'free plan',
-            'guest post',
-            'backlinks',
-            'seo services',
-            'crypto investment',
-            'publishing 3x more',
-            'boost watch time',
-        ];
+        return preg_match('/^[A-Z]{2}$/', $country) && ! in_array($country, ['XX', 'T1'], true)
+            ? $country
+            : null;
+    }
 
-        foreach ($promotionalPhrases as $phrase) {
-            if (Str::contains($message, $phrase)) {
-                $score += 2;
-            }
+    private function hashIp(?string $ip): ?string
+    {
+        return $ip
+            ? hash_hmac('sha256', $ip, (string) config('app.key'))
+            : null;
+    }
+
+    private function clientIp(EnquiryRequest $request): ?string
+    {
+        return (string) ($request->hasHeader('CF-Ray')
+            ? $request->header('CF-Connecting-IP', $request->ip())
+            : $request->ip());
+    }
+
+    private function sendOwnerNotification(Enquiry $enquiry): void
+    {
+        try {
+            Mail::to(
+                config('mail.enquiry_to.address'),
+                config('mail.enquiry_to.name'),
+            )->send(new EnquiryReceived(
+                enquiry: $enquiry->mailPayload(),
+                spamScore: $enquiry->spam_score,
+                spamStatus: $enquiry->spam_status,
+                enquiryId: $enquiry->id,
+            ));
+
+            $enquiry->update(['notification_sent_at' => now()]);
+        } catch (Throwable $exception) {
+            report($exception);
         }
+    }
 
-        $suspiciousLinkHosts = [
-            'telegra.ph',
-            'bit.ly',
-            'tinyurl.com',
-            't.me/',
-        ];
+    private function sendConfirmation(Enquiry $enquiry): void
+    {
+        try {
+            Mail::to($enquiry->email, $enquiry->name)
+                ->send(new EnquiryConfirmation($enquiry->mailPayload()));
 
-        if (Str::contains($message, $suspiciousLinkHosts)) {
-            $score += 2;
+            $enquiry->update(['confirmation_sent_at' => now()]);
+        } catch (Throwable $exception) {
+            report($exception);
         }
-
-        return $score >= 3;
     }
 
     private function successMessage(): string
