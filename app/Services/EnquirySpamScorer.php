@@ -12,6 +12,31 @@ class EnquirySpamScorer
      * @param  array<string, mixed>  $data
      * @return array{score: int, status: string, reasons: array<int, array{code: string, label: string, points: int}>, fingerprint: string, email_country: ?string, link_countries: array<int, string>}
      */
+    /*-----------------------------------------------------------------------
+     * Score	Status	    You receive email?          Sender confirmation?
+     * ----------------------------------------------------------------------
+     * 0–29	    Delivered	Yes                         Yes
+     * 30–59	Suspicious	Yes, marked for checking    No
+     * 60–79	Quarantined	No                          No
+     * 80–100	Blocked	    No                          No
+     * ----------------------------------------------------------------------
+     * How the score is calculated
+     * ----------------------------------------------------------------------
+     * 100  Hidden honeypot completed
+     * 40   Form completed in under 3 seconds
+     * 30   Missing/invalid form timer
+     * 5    One link
+     * 10   Multiple links
+     * 25   Shortened/commonly abused link
+     * 5    IP outside Australia
+     * 10   IP from configured higher-risk country
+     * 15   Email with higher-risk country extension
+     * 20   Link with higher-risk country extension
+     * 60   Obvious SEO/marketing sales pitch
+     * 55   Known promotional/scam language
+     * 35   Disposable email address
+     * 5    Gmail etc. with no organisation
+     *-----------------------------------------------------------------------*/
     public function assess(array $data): array
     {
         $message = Str::lower((string) ($data['message'] ?? ''));
